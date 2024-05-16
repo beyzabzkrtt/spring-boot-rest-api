@@ -1,19 +1,27 @@
 package com.example.springbootrestapi.service.concretes;
 
+import java.util.Arrays;
 import java.util.Date;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 
+import com.example.springbootrestapi.advice.UserNotFound;
 import com.example.springbootrestapi.dto.UserDto;
 import com.example.springbootrestapi.entitiy.User;
 import com.example.springbootrestapi.repository.UserRepository;
 import com.example.springbootrestapi.service.abstracts.UserService;
+import com.example.springbootrestapi.util.CustomPage;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 
 @Service
 @RequiredArgsConstructor //injection icin contructor
@@ -45,7 +53,7 @@ public class UserServiceImpl implements UserService{
 		if(user.isPresent()) {
 			return modelMapper.map(user.get(),UserDto.class);
 		}
-		return null;
+		throw new UserNotFound("Kullanıcı bulunamadı");
 	}
 
 	@Override
@@ -60,8 +68,8 @@ public class UserServiceImpl implements UserService{
 			
 			return modelMapper.map(userRepository.save(resultUser.get()),UserDto.class);
 		}
-		return null;
-	}
+		throw new IllegalArgumentException("Kullanıcı bulunamadı");
+	} 
 
 	@Override
 	public Boolean deleteUser(Long id) {
@@ -72,6 +80,33 @@ public class UserServiceImpl implements UserService{
 			return true;
 		}
 		return false;
+	}
+
+	@Override
+	public Page<User> pagination(int currentPage, int pageSize) {
+		
+		Pageable pageable = PageRequest.of(currentPage, pageSize);
+		return userRepository.findAll(pageable);
+	}
+
+	@Override
+	public Page<User> pagination(Pageable pageable) {
+
+			return userRepository.findAll(pageable);
+	}
+
+	@Override
+	public Slice<User> slice(Pageable pageable) {
+		
+		return userRepository.findAll(pageable);
+	}
+
+	@Override
+	public CustomPage<UserDto> customPagination(Pageable pageable) {
+		
+		Page<User> data = userRepository.findAll(pageable);
+		UserDto[] dtos = modelMapper.map(data.getContent(), UserDto[].class);
+		return new CustomPage<UserDto>(data,Arrays.asList(dtos));
 	} 
 	
 }
